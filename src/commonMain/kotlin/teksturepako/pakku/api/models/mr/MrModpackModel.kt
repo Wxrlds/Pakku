@@ -10,6 +10,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import teksturepako.pakku.api.actions.errors.ActionError
 import teksturepako.pakku.api.data.LockFile
+import teksturepako.pakku.api.data.ProjectMapping
 import teksturepako.pakku.api.models.ModpackModel
 import teksturepako.pakku.api.platforms.CurseForge
 import teksturepako.pakku.api.platforms.Modrinth
@@ -65,7 +66,15 @@ data class MrModpackModel(
 
                 val cfProjects = projectToSlugs.map { (project, slug) ->
                     async {
-                        Ok(CurseForge.requestProjectFromSlug(slug)
+                        val targetSlug = ProjectMapping.getCfSlug(slug)
+
+                        if (targetSlug != slug)
+                        {
+                            if (project.aliases == null) project.aliases = mutableSetOf()
+                            project.aliases!!.add(targetSlug)
+                        }
+
+                        Ok(CurseForge.requestProjectFromSlug(targetSlug)
                             .getOrElse { return@async Err(it) }
                             .apply {
                                 files += CurseForge.requestFilesForProject(

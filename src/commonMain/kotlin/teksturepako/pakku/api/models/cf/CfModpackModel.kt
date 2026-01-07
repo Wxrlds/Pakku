@@ -7,6 +7,7 @@ import com.github.michaelbull.result.getOrElse
 import kotlinx.serialization.Serializable
 import teksturepako.pakku.api.actions.errors.ActionError
 import teksturepako.pakku.api.data.LockFile
+import teksturepako.pakku.api.data.ProjectMapping
 import teksturepako.pakku.api.models.ModpackModel
 import teksturepako.pakku.api.platforms.CurseForge
 import teksturepako.pakku.api.platforms.Modrinth
@@ -65,7 +66,16 @@ data class CfModpackModel(
             debug { println("Modrinth sub-import") }
 
             val slugs = projects.mapNotNull { project ->
-                project.slug[CurseForge.serialName]?.let { it to project.type }
+                val cfSlug = project.slug[CurseForge.serialName] ?: return@mapNotNull null
+                val targetSlug = ProjectMapping.getMrSlug(cfSlug)
+
+                if (targetSlug != cfSlug)
+                {
+                    if (project.aliases == null) project.aliases = mutableSetOf()
+                    project.aliases!!.add(targetSlug)
+                }
+
+                targetSlug to project.type
             }.toMap()
 
             val mrProjects = Modrinth.requestMultipleProjectsWithFiles(
